@@ -2,34 +2,34 @@ import numpy as np
 
 
 def svd(M):
-    eigenvalues, eigenvectors = np.linalg.eig(np.dot(M, M.T))
-    ncols = np.argsort(eigenvalues)[::-1]
-    U = eigenvectors[:, ncols]
+    eigvals_U, eigvecs_U = np.linalg.eig(np.dot(M, M.T))
+    sorted_indices_U = np.argsort(eigvals_U)[::-1]
+    U = eigvecs_U[:, sorted_indices_U]
+    sigma = np.sqrt(np.abs(eigvals_U[sorted_indices_U]))
 
-    eigenvalues, eigenvectors = np.linalg.eig(np.dot(M.T, M))
-    ncols = np.argsort(eigenvalues)[::-1]
-    VT = eigenvectors[:, ncols].T
+    V = []
+    for i in range(len(sigma)):
+        if sigma[i] > 1e-10:  # avoid zero devision
+            V.append(np.dot(M.T, U[:, i]) / sigma[i])
+        else:
+            V.append(np.zeros_like(M.T[:, 0]))
+    V = np.array(V).T
 
-    if (np.size(np.dot(M, M.T)) > np.size(np.dot(M.T, M))):
-        newM = np.dot(M.T, M)
-    else:
-        newM = np.dot(M, M.T)
-    eigenvalues, eigenvectors = np.linalg.eig(newM)
-    eigenvalues = np.sqrt(eigenvalues)
-    sigma = eigenvalues[::-1]
+    Sigma = np.zeros((U.shape[0], V.shape[1]))
+    for i in range(min(U.shape[0], V.shape[1])):
+        Sigma[i, i] = sigma[i]
 
-    return U, sigma, VT
-
-
-A = np.array([[4,2,0],
-              [1,5,6]])
-U, sigma, VT = svd(A)
+    return U, Sigma, V.T
 
 
-new_sigma = np.zeros((2, 3))
-new_sigma[:2, :2] = np.diag(sigma[:2])
+A = np.array([[4, 2, 9],
+              [1, 5, 6]])
 
-print(A,"\n")
+U, Sigma, VT = svd(A)
 
-A_remake = (U @ new_sigma @ VT)
+print("Original matrix A:")
+print(A, "\n")
+
+A_remake = U @ Sigma @ VT
+print("Reconstructed matrix A:")
 print(A_remake)
